@@ -1,6 +1,7 @@
 import pandas as pd
 from transformers import *
 import torch
+from torch.nn import CosineSimilarity
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -28,11 +29,13 @@ for idx, row in df.iterrows():
 
     with torch.no_grad():
         out = model(**batch)
-        print(out)
         emb = out.last_hidden_state
-        print(emb.shape)
-    embeddings.append(emb.squeeze())
+    embeddings.append(emb.squeeze().flatten())
 
 
-print(embeddings)
-print(len(embeddings))
+template = embeddings[2]
+embeddings = torch.stack(embeddings, dim=0)
+cos = CosineSimilarity(dim=1)
+sim = cos(template, embeddings)
+print(sim.shape)
+print(sim)
