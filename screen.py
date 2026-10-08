@@ -7,21 +7,32 @@ warnings.filterwarnings("ignore")
 
 df = pd.read_csv('./raw.csv',sep=';')
 print(df.head())
+df = df[:10]
 
 tokenizer = AutoTokenizer.from_pretrained('allenai/scibert_scivocab_uncased')
 model = AutoModel.from_pretrained('allenai/scibert_scivocab_uncased')
 
 model.eval()
 
-texts = ["first sentence", "second sentence"]
+embeddings = []
+for idx, row in df.iterrows():
+    text = 'TITLE:' + str(row['Article Title']) + ' ABSTRACT:' + str(row['Abstract'])
+    texts = [text]
+    batch = tokenizer(
+            texts, 
+            truncation=True, 
+            return_tensors="pt",
+            padding='max_length', 
+            max_length=512
+            )
 
-# Tokenize (padding for batches)
-batch = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
+    with torch.no_grad():
+        out = model(**batch)
+        print(out)
+        emb = out.last_hidden_state
+        print(emb.shape)
+    embeddings.append(emb.squeeze())
 
-with torch.no_grad():
-    out = model(**batch)
 
-# batch dict contains input_ids, attention_mask (and sometimes token_type_ids).
-# Pass the attention_mask so padded tokens are ignored!
-emb = out.last_hidden_state
-print(emb)
+print(embeddings)
+print(len(embeddings))
